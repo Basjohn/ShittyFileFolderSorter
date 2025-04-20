@@ -6,9 +6,9 @@ import re
 from difflib import SequenceMatcher
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLineEdit, QPushButton, QFileDialog,
-                            QProgressBar, QLabel, QMessageBox, QCheckBox)
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QIcon
+                            QProgressBar, QLabel, QMessageBox, QCheckBox, QDialog, QDialogButtonBox)
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize
+from PyQt5.QtGui import QColor, QIcon
 import logging
 
 # Suppress deprecation warnings
@@ -321,6 +321,7 @@ class MainWindow(QMainWindow):
         browse_button.clicked.connect(self.browse_folder)
         folder_layout.addWidget(self.folder_input, 3)
         folder_layout.addWidget(browse_button, 1)
+        main_layout.addLayout(folder_layout)
         
         # Create media sorting checkbox
         self.media_sort_checkbox = QCheckBox("Sort images and videos into separate folders")
@@ -348,7 +349,6 @@ class MainWindow(QMainWindow):
         self.undo_button.setHidden(True)
         
         # Add widgets to main layout
-        main_layout.addLayout(folder_layout)
         main_layout.addWidget(self.media_sort_checkbox)
         main_layout.addWidget(self.sort_button)
         main_layout.addWidget(self.progress_bar)
@@ -359,7 +359,18 @@ class MainWindow(QMainWindow):
         status_layout.addWidget(self.undo_button, 1)
         main_layout.addLayout(status_layout)
         
-        # Set central widget
+        # Add question mark button (bottom right)
+        self.question_button = QPushButton()
+        self.question_button.setFixedSize(28, 28)
+        self.question_button.setToolTip('About/Donate/Books')
+        self.question_button.clicked.connect(self.show_info_dialog)
+        self.question_button.raise_()
+        # Overlay the button in the bottom right
+        self.floating_layout = QHBoxLayout()
+        self.floating_layout.addStretch()
+        self.floating_layout.addWidget(self.question_button)
+        main_layout.addLayout(self.floating_layout)
+        central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
         
         # Set stylesheet for a modern look
@@ -516,6 +527,34 @@ class MainWindow(QMainWindow):
         self.sort_button.setEnabled(True)
         self.status_label.setText("Changes undone!")
         QMessageBox.information(self, "Undo Complete", "All changes have been reverted.")
+        
+    def show_info_dialog(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Support / About')
+        dialog.setWindowFlags(dialog.windowFlags() | Qt.WindowStaysOnTopHint)
+        dialog.setMinimumWidth(350)
+        layout = QVBoxLayout(dialog)
+        msg = QLabel('Made to sort out particularly obnoxious folders.  Donations or money wasted on my shitty literature are welcome')
+        msg.setWordWrap(True)
+        layout.addWidget(msg)
+        # Bold clickable text links instead of icons
+        links_label = QLabel()
+        links_label.setText('<b><a href="https://www.paypal.com/donate/?business=UBZJY8KHKKLGC&no_recurring=0&item_name=Why+are+you+doing+this?+Are+you+drunk?+&currency_code=USD">Donate via PayPal</a></b><br>'
+                            '<b><a href="https://www.goodreads.com/book/show/25006763-usu">Usu on Goodreads</a></b><br>'
+                            '<b><a href="https://www.amazon.com/dp/B00ZV9PXP2">Usu on Amazon</a></b>')
+        links_label.setOpenExternalLinks(True)
+        links_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        layout.addWidget(links_label)
+        # OK button
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok)
+        buttons.accepted.connect(dialog.accept)
+        layout.addWidget(buttons)
+        dialog.setLayout(layout)
+        dialog.exec_()
+        
+    def open_url(self, url):
+        import webbrowser
+        webbrowser.open(url)
 
 
 if __name__ == "__main__":
